@@ -6,6 +6,16 @@
 ##year_start: numeric "YYYY"
 ##year_end: numeric "YYYY"
 
+list.of.packages = c("dplyr")
+
+new.packages = list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages) > 0) {
+  stop(paste0("This function requires package ", new.packages))
+}
+
+library(dplyr)
+library(aWhereAPI)
+
 generateaWhereDataset <- function(lat, lon, day_start, day_end, year_start, year_end) {
   
   #set month-day combos to pull LTN for. If more than one year of data is requested, then
@@ -34,10 +44,9 @@ generateaWhereDataset <- function(lat, lon, day_start, day_end, year_start, year
   #simplify column names
   names(obs)[grep("temperatures.max", names(obs))] <- "maxTemp"
   names(obs)[grep("temperatures.min", names(obs))] <- "minTemp"
-  names(obs)[grep("precipitation.amount", names(obs))] <- "precip"
-  
+
   #pull agronomic data for time period
-  ag <- agronomic_values_latlng(lat, lon, day_start, interim_day_end) %>% 
+  ag <- agronomic_values_latlng(lat, lon, day_start, day_end) %>% 
     cbind(., data.frame(do.call(rbind, strsplit(.$date, "-")))) %>% 
     mutate(day = paste0(X2, "-", X3)) %>% 
     dplyr::select(-c(X1,X2,X3))
@@ -56,21 +65,11 @@ generateaWhereDataset <- function(lat, lon, day_start, day_end, year_start, year
         merge(., obs_ltn,            by = "day") %>% 
         merge(., ag_ltn,             by = "day")   %>% 
         .[order(.$date),] %>%
-        dplyr::mutate(latitude = lat,
-                      longitude = lon,
-                      accumulatedPrecipitation.average = cumsum(precipitation.average),
+        dplyr::mutate(accumulatedPrecipitation.average = cumsum(precipitation.average),
                       accumulatedPet.average = cumsum(pet.average),
-                      accumulatedPpet.average = cumsum(ppet.average)) %>%
-        dplyr::select(day, date, latitude, longitude, maxTemp, maxTemp.average, maxTemp.stdDev, minTemp, 
-                      minTemp.average, minTemp.stdDev, precip, precipitation.average, precipitation.stdDev,
-                      accumulatedPrecipitation.amount, accumulatedPrecipitation.average, accumulatedPrecipitation.stdDev,
-                      gdd, gdd.average, gdd.stdDev, pet.amount, pet.average, pet.stdDev, accumulatedPet.amount, 
-                      accumulatedPet.average, accumulatedPet.stdDev, ppet, ppet.average, ppet.stdDev,
-                      accumulatedPpet, accumulatedPpet.average, accumulatedPpet.stdDev)
-      
-      names(weather_full)[grep("latitude.x", names(weather_full))] <- "latitude"
-      names(weather_full)[grep("longitude.x", names(weather_full))] <- "longitude"
-    
+                      accumulatedPpet.average = cumsum(ppet.average))
+
+
     } else {
       
       #pull forecasted data for determined time period
@@ -81,30 +80,40 @@ generateaWhereDataset <- function(lat, lon, day_start, day_end, year_start, year
         mutate(day = paste0(X2, "-", X3))%>% 
         dplyr::select(-c(X1,X2,X3)) 
       
+      #set precipitation name to delineate from observed
+      names(forecast)[grep("precipitation.amount", names(forecast))] <- "precipitation.forecast"
+      
       #create final dataset
       
-      weather_full <- merge(obs, ag, by = c("date", 'day')) %>%
+      weather_full <- merge(obs, ag, by = c("date", 'day'), all = TRUE) %>%
         merge(., forecast,       by = c("date", "day"), all = TRUE) %>% 
         merge(., obs_ltn,    by = "day")  %>%  
         merge(., ag_ltn,  by = "day") %>%
         .[order(.$date),] %>% 
-        dplyr::mutate(latitude = lat,
-                      longitude = lon,
-                      maxTemp = ifelse(!is.na(maxTemp), maxTemp, temperatures.max),
+        dplyr::mutate(maxTemp = ifelse(!is.na(maxTemp), maxTemp, temperatures.max),
                       minTemp = ifelse(!is.na(minTemp), minTemp, temperatures.min),
-                      precip = ifelse(!is.na(precip), precip, precipitation.amount),
-                      accumulatedPrecipitation.amount = cumsum(precip),
+                      precipitation.amount = ifelse(!is.na(precipitation.amount), precipitation.amount, precipitation.forecast),
+                      accumulatedPrecipitation.amount = cumsum(precipitation.amount),
                       accumulatedPrecipitation.average = cumsum(precipitation.average),
                       accumulatedPet.average = cumsum(pet.average),
-                      accumulatedPpet.average = cumsum(ppet.average)) %>% 
-        dplyr::select(day, date, latitude, longitude, maxTemp, maxTemp.average, maxTemp.stdDev, minTemp, 
-                      minTemp.average, minTemp.stdDev, precip, precipitation.average, precipitation.stdDev, 
-                      accumulatedPrecipitation.amount, accumulatedPrecipitation.average, accumulatedPrecipitation.stdDev,
-                      gdd, gdd.average, gdd.stdDev, pet.amount, pet.average, pet.stdDev, accumulatedPet.amount, 
-                      accumulatedPet.average, accumulatedPet.stdDev, ppet, ppet.average, ppet.stdDev,
-                      accumulatedPpet, accumulatedPpet.average, accumulatedPpet.stdDev)
+                      accumulatedPpet.average = cumsum(ppet.average))
       
       
     }
+      
+      weather_full <- weather_full %>%  
+        dplyr::select(day, date,
+                      maxTemp.amount = maxTemp, maxTemp.average, maxTemp.stdDev, 
+                      minTemp.amount = minTemp, minTemp.average, minTemp.stdDev, 
+                      precipitation.amount, precipitation.average, precipitation.stdDev, 
+                      accumulatedPrecipitation.amount, accumulatedPrecipitation.average, accumulatedPrecipitation.stdDev,
+                      gdd.amount = gdd, gdd.average, gdd.stdDev, 
+                      pet.amount, pet.average, pet.stdDev, 
+                      accumulatedPet.amount, accumulatedPet.average, accumulatedPet.stdDev, 
+                      ppet.amount = ppet, ppet.average, ppet.stdDev, 
+                      accumulatedPpet.amount = accumulatedPpet, accumulatedPpet.average, accumulatedPpet.stdDev) %>% 
+        dplyr::mutate(latitude = lat,
+                      longitude = lon)
+  
   return(weather_full)
 }

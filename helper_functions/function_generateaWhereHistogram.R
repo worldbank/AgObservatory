@@ -1,5 +1,5 @@
 ##inputs to function:
-#data: (data frame) must be in format like that resulting from aWhere API query
+#data: (data frame) takes a dataset that contains multiple observations of a variable as an input - observations can be across time or locations
 #variable: (character string) Variable to chart - must be spelled exactly the same as in the data
 #compare: (logical) Set to true to chart a second variable (compare_var)
 #compare_var: (character string) Name of the second variable to chart
@@ -10,7 +10,9 @@
 list.of.packages = c("ggplot2", "ggthemes", "tidyr", "zoo")
 
 new.packages = list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-if(length(new.packages)) install.packages(new.packages)
+if(length(new.packages) > 0) {
+  stop(paste0("This function requires package ", new.packages))
+}
 
 ## load necessary libraries
 library(ggplot2)
@@ -58,35 +60,7 @@ generateaWhereHistogram <- function(data, variable,
     }
 
     
-    # #if e_precip is set to true, bring in daily precip data and calculate accumulated
-    # #daily precipitation using either default or user-defined threshold
-    # 
-    # if(e_precip == TRUE) {
-    #   chart_data$Effective <- chart_data$Variable
-    #   chart_data$Effective[chart_data$Effective > e_threshold ] <- e_threshold
-    # }
-    # 
-    # 
-    # #do row accumulations or averages, depending on variable
-    # chart_data <- tidyr::gather(chart_data, 
-    #                             key = Variable, 
-    #                             value = measure, 
-    #                             2:ncol(chart_data))
-    # 
-    # if (length(unique(chart_data$place)) > 1 & variable %in% c("maxTemp", "minTemp", "ppet")) {
-    #   
-    #   chart_data <- chart_data %>% group_by(place, Variable) %>% 
-    #     summarise(mean(measure, na.rm = TRUE))
-    # 
-    #   } else if (length(unique(chart_data$place)) > 1 & variable %in% c("precip", "pet")) {
-    #   
-    #   chart_data <- chart_data %>% group_by(place, Variable) %>% 
-    #     summarise(sum(measure, na.rm = TRUE))
-    #   
-    # }
-    # 
-    # names(chart_data)[3] <- "measure"
-    
+  
     #set color scale based on # of vars to chart
     if(length(unique(chart_data$Variable)) == 2) {
       colorScaleToUse <- scale_colour_manual(values = c("#1696AC", "#FF810E")) 

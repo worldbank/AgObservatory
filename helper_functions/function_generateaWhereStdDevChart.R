@@ -1,11 +1,21 @@
 ##inputs to function:
 #data: (data frame) must be in format like that resulting from aWhere API query
-#variable: (character string) Variable to chart - accepted values are precip, accprecip, maxTemp, minTemp, pet, accpet, ppet, or rollingavgppet
+#variable: (character string) Acceptable values are precipitation, accumulatedPrecipitation, maxTemp, minTemp, pet, accumulatedPet, ppet, or rollingavgppetprecip, accprecip, maxTemp, minTemp, pet, accpet, ppet, or rollingavgppet
 #title: (character string) Title to assign to the plot (optional)
 #e_precip: (logical) If True, effective precipitation will be calculated and charted based on e_threshold
 #e_threshold: (numeric) The daily cap used to calculate effective precip if e_precip is set to TRUE. (mm)
 #rolling_window: (numeric) Number of days to use in rolling average calculation
 ###dependencies: tidyr, zoo
+
+list.of.packages = c("tidyr", "zoo")
+
+new.packages = list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages) > 0) {
+  stop(paste0("This function requires package ", new.packages))
+}
+
+library(tidyr)
+library(zoo)
 
 #generate charts
 generateaWhereStdDevChart <- function(data, variable, 
@@ -15,33 +25,37 @@ generateaWhereStdDevChart <- function(data, variable,
                                 rolling_window = 30) {
   
   ##determine vars to chart
-  if(variable == "precip") {
-    varsToChart <- c("precip", "precipitation.average", "precipitation.stdDev")  
-    ylabel <- "mm"
-  } else if(variable == "accprecip") {
-    varsToChart <- c("accumulatedPrecipitation.amount", "accumulatedPrecipitation.average", "accumulatedPrecipitation.stdDev")    
-    ylabel <- "mm"
-  } else if(variable == "maxTemp") {
-    varsToChart <- c("maxTemp", "maxTemp.average", "maxTemp.stdDev")    
-    ylabel <- "Celsius"
-  } else if(variable == "minTemp") {
-    varsToChart <- c("minTemp", "minTemp.average", "minTemp.stdDev")    
-    ylabel <- "Celsius"
-  } else if(variable == "pet") {
-    varsToChart <- c("pet.amount", "pet.average", "pet.stdDev")   
-    ylabel <- "mm"
-  } else if(variable == "accpet") {
-    varsToChart <- c("accumulatedPet.amount", "accumulatedPet.average", "accumulatedPet.stdDev")   
-    ylabel <- "mm"
-  } else if(variable == "ppet") {
-    varsToChart <- c("ppet", "ppet.average", "ppet.stdDev")   
-    ylabel <- "mm"
+  if(variable %in% c("precipitation", "accumulatedPrecipitation",
+                     "maxTemp", "minTemp", "pet", "accumulatedPet",
+                     "ppet")) {
+    
+    varsToChart <- c(paste0(variable,'.amount'), paste0(variable,'.average'), paste0(variable,'.stdDev'))    
+    
   } else if(variable == "rollingavgppet") {
-    varsToChart <- c("ppet", "ppet.average", "ppet.stdDev")    
-    ylabel <- "mm"
+    
+    varsToChart <- c("ppet.amount", "ppet.average", "ppet.stdDev")    
+    
   } else {
-    stop("Input Variable is not from allowed list. Please use precip, accprecip, 
-         maxTemp, minTemp, pet, accpet, ppet, or rollingavgppet.")
+    
+    stop("Input Variable is not from allowed list. Please use precipitation, accumulatedPrecipitation, 
+           maxTemp, minTemp, pet, accumulatedPet, ppet, or rollingavgppet.")
+    
+  }
+  
+  ##set ylabel
+  if(variable %in% c("precipitation", "accumulatedPrecipitation",
+                     "pet", "accumulatedPet")) {
+    
+    ylabel = "mm"
+    
+  } else if(variable %in% c("maxTemp", "minTemp")) {
+    
+    ylabel <- "Celsius"  
+    
+  } else {
+    
+    ylabel = "Index"
+    
   }
   
   #filter out relevant data
