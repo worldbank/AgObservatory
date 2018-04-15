@@ -1,6 +1,6 @@
 ##inputs to function:
 #data: (data frame) must be in format like that resulting from aWhere API query
-#variable: (character string) Acceptable values are precipitation, accumulatedPrecipitation, maxTemp, minTemp, pet, accumulatedPet, ppet, or rollingavgppetprecip, accprecip, maxTemp, minTemp, pet, accpet, ppet, or rollingavgppet
+#variable: (character string) Acceptable values are precipitation, accumulatedPrecipitation, maxTemp, minTemp, pet, accumulatedPet, ppet, or rollingavgppet
 #title: (character string) Title to assign to the plot (optional)
 #e_precip: (logical) If True, effective precipitation will be calculated and charted based on e_threshold
 #e_threshold: (numeric) The daily cap used to calculate effective precip if e_precip is set to TRUE. (mm)
