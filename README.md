@@ -15,6 +15,3 @@ This repository aims to enable World Bank Group staff and partners to easily acc
 
 
 *Contact Caroline (csartoratosilvaf@worldbank.org) to consult on possibilities for extension of trial under the Ag Observatory license
-
-
-[Under development]
